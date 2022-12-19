@@ -7,9 +7,9 @@
 ####################################################################################################
 
 # need to be changed on each official DB/CORE release
-FULLDB_FILE_ZIP="CataDB_1_0_c0000.sql.gz"
+FULLDB_FILE_ZIP="CataDB_1.1.0_TheSundering.sql.gz"
 FULLDB_FILE=${FULLDB_FILE_ZIP%.gz}
-NEXT_MILESTONES="0.1.1"
+NEXT_MILESTONES="1.2.0"
 
 # specific to this core
 EXPANSION="Cata" #warning only 'Classic' or 'TBC' or 'WoTLK' else acid filename will be wrong
