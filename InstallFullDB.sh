@@ -269,7 +269,7 @@ function save_settings()
   allsettings+=("## Define default mysql address binding(you can set \"%\" to be able to connect from any computer)")
   allsettings+=("MYSQL_USERIP=\"$MYSQL_USERIP\"")
   allsettings+=("")
-  allsettings+=("## Define the databases name (let them empty for default name '"$EXPANSION_LC"dbtype')")
+  allsettings+=("## Define the databases names (let them empty for default name '"$EXPANSION_LC"dbtype')")
   allsettings+=("WORLD_DB_NAME=\"$WORLD_DB_NAME\"")
   allsettings+=("REALM_DB_NAME=\"$REALM_DB_NAME\"")
   allsettings+=("CHAR_DB_NAME=\"$CHAR_DB_NAME\"")
@@ -295,7 +295,7 @@ function save_settings()
   allsettings+=("##   Set the variable to \"YES\" to use the dev directory")
   allsettings+=("DEV_UPDATES=\"$DEV_UPDATES\"")
   allsettings+=("")
-  allsettings+=("## Define if AHBot SQL updates need to be applied (by default, assumes the core is built without AHBot)")
+  allsettings+=("## Define if AHBot SQL updates need to be applied (by default, assume the core is built without AHBot)")
   allsettings+=("## Set the variable to \"YES\" to import AHBot sql.")
   allsettings+=("AHBOT=\"$AHBOT\"")
   allsettings+=("")
@@ -688,7 +688,7 @@ function change_mysql_settings()
     read -e -p    "MySQL user IP access............: " -i $MYSQL_USERIP MYSQL_USERIP
     read -e -p    "Enter MySQL binary path.........: " -i "$MYSQL_PATH" MYSQL_PATH
     read -e -p    "Enter MySQL dump binary path....: " -i "$MYSQL_DUMP_PATH" MYSQL_DUMP_PATH
-    read -e -p    "Enter core path.................: " -i "$CORE_PATH" CORE_PATH
+    read -e -p    "Enter Core path.................: " -i "$CORE_PATH" CORE_PATH
     change_db_name
     echo -e "Choose YES or NO for following options"
     read -e -p    "LOCALE(default:YES).............: " -i "$LOCALES" LOCALES
@@ -703,7 +703,7 @@ function change_mysql_settings()
     read -e -p    "MySQL user IP access...........current($MYSQL_USERIP).: " musip
     read -e -p    "Enter MySQL binary path........current($MYSQL_PATH).: " mpath
     read -e -p    "Enter MySQL dump binary path...current($MYSQL_DUMP_PATH).: " mdpath
-    read -e -p    "Enter core path................current($CORE_PATH).: " cpath
+    read -e -p    "Enter Core path................current($CORE_PATH).: " cpath
     change_db_name
     echo -e "Choose YES or NO for following options"
     read -e -p    "LOCALE(default:YES)............current($LOCALES).: " loc
@@ -758,10 +758,12 @@ function print_mysql_connection_status()
 
 # Get current db version
 # get_current_db_version "database name" "table name"
-# result will be in CURRENT_DB_VERSION
+# result will be in CURRENT_DB_VERSION and in CURRENT_LAST_CONTENT_DB_VERSION
 function get_current_db_version()
 {
   CURRENT_DB_VERSION=""
+  CURRENT_LAST_CONTENT_DB_VERSION=""
+
   sql="SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA='$1' AND TABLE_NAME='$2';"
   #echo "$sql"
   IFS=$'\n'
@@ -775,8 +777,8 @@ function get_current_db_version()
         ;;
 
       content_*)
-        DB_LAST_CONTENT_VERSION_UPDATE=$(echo "${row[0]//[$'\n\r']}") # remove eventual carriage return
-        DB_LAST_CONTENT_VERSION_UPDATE=$(echo -n "${DB_LAST_CONTENT_VERSION_UPDATE//content_}") # remove "content_"
+        CURRENT_LAST_CONTENT_DB_VERSION=$(echo "${row[0]//[$'\n\r']}") # remove eventual carriage return
+        CURRENT_LAST_CONTENT_DB_VERSION=$(echo -n "${CURRENT_LAST_CONTENT_DB_VERSION//content_}") # remove "content_"
         ;;
      esac
   done < <("$MYSQL_PATH" -u"$MYSQL_USERNAME" -h"$MYSQL_HOST" -P"$MYSQL_PORT" -s -N -e"$sql")
@@ -790,6 +792,7 @@ function check_dbs_accessibility()
   local showstatus=${1:false}
   local current_error
   local UNAVAILABLE_DB=()
+  local sql=""
   ERRORS=()
   DB_WORLDDB_VERSION="0"
   DB_REALMDB_VERSION="0"
@@ -799,7 +802,6 @@ function check_dbs_accessibility()
   STATUS_CHAR_DB_FOUND=false
   STATUS_REALM_DB_FOUND=false
   STATUS_LOGS_DB_FOUND=false
-  DB_LAST_CONTENT_VERSION_UPDATE=""
   DB_CONTENT_RELEASE_VERSION=""
 
   if ! try_connect_to_db ; then
@@ -816,6 +818,7 @@ function check_dbs_accessibility()
     if [[ "$showstatus" = true ]]; then echo -ne "SUCCESS"; fi
     get_current_db_version "$WORLD_DB_NAME" "db_version"
     DB_WORLDDB_VERSION="$CURRENT_DB_VERSION"
+    DB_LAST_CONTENT_VERSION_UPDATE="$CURRENT_LAST_CONTENT_DB_VERSION"
     STATUS_WORLD_DB_FOUND=true
 
     #select version from db_version;
@@ -915,7 +918,7 @@ function show_installation_status()
 
   if [[ "$STATUS_USER_SUCCESS" = false ]]; then
     echo "Warning: MySQL is not able to connect with the current user!"
-    echo "         You can either create it (option 5) or change user in settings (option 1)"
+    echo "         You can either create it (option 5) or change user in settings(option 1)"
   fi
 
   if [[ "$STATUS_USER_SUCCESS" = false ]] && [[ "$STATUS_ROOT_SUCCESS" = false ]]; then
@@ -991,7 +994,7 @@ function show_installation_status()
     for nc in "${db_need_create[@]}"; do
       echo -ne "'$nc' "
     done
-    echo "         You can create either create them (option 5) or adjust your settings (option 1)"
+    echo "         You can create either create them(option 5) or adjust your settings(option 1)"
     echo
     allGood=false
   fi
@@ -1068,7 +1071,7 @@ function get_current_source_db_version()
 # Update world db using core update
 function apply_world_db_core_update()
 {
-  echo "> Trying to process last world (mangos) CORE updates"
+  echo "> Trying to process last world(mangos) CORE updates"
 
   if [[ "$STATUS_WORLD_DB_FOUND" = "false" ]] || [[ "$DB_WORLDDB_VERSION" = "0" ]]; then
     echo ">>> ERROR: cannot get last core revision in DB"
@@ -1481,22 +1484,13 @@ function apply_content_db()
   echo
 
   echo "> Trying to set last content update version in db"
-  DB_LAST_CONTENT_VERSION_UPDATE=""
-  local sql="SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA='$WORLD_DB_NAME' AND TABLE_NAME='db_version';"
-  #echo "$sql"
-  export MYSQL_PWD="$MYSQL_PASSWORD"
-  while read -a row
-  do
-    case "$row" in
-    #echo "${row[0]}"
-      *content_*)
-        DB_LAST_CONTENT_VERSION_UPDATE=$(echo "${row[0]//[$'\n\r']}") # remove eventual carriage return
-        DB_LAST_CONTENT_VERSION_UPDATE=$(echo -n "${DB_LAST_CONTENT_VERSION_UPDATE//content_}") # remove "content_"
-        ;;
-     esac
-  done < <("$MYSQL_PATH" -u"$MYSQL_USERNAME" -h"$MYSQL_HOST" -P"$MYSQL_PORT" -s -N -e"$sql")
-
   sql=""
+  # first update last content revision because it can be changed from previous updates
+  get_current_db_version "$WORLD_DB_NAME" "db_version"
+  DB_WORLDDB_VERSION="$CURRENT_DB_VERSION"
+  DB_LAST_CONTENT_VERSION_UPDATE="$CURRENT_LAST_CONTENT_DB_VERSION"
+
+  # if a previous content version is found delete it
   if [[ "$DB_LAST_CONTENT_VERSION_UPDATE" = "" ]]; then
     DB_LAST_CONTENT_VERSION_UPDATE="$SOURCE_LAST_CONTENT_VERSION_UPDATE"
   else
@@ -2332,7 +2326,7 @@ function backup_restore()
         return
       fi
     fi
-    echo "Invalid choice, please retry."
+    echo "Invalid choice please retry."
   done
   local filename=${filenames[$choice]}
   IFS="$OLDIFS"
@@ -2356,7 +2350,7 @@ function manage_realmlist_menu()
     echo
     print_realm_list
     echo
-    echo "> 1) Edit a realm"
+    echo "> 1) Edit one realm"
     echo "> 2) Add new realm"
     echo "> 3) Remove a realm"
     echo "> 4) Refresh realm list"
@@ -2619,10 +2613,11 @@ function main_menu()
     done
 
     print_header
-    echo "Source version     : [${SOURCE_CONTENT_RELEASE_VERSION}] $DB_RELEASE_TITLE"
-    echo "Last content update: [${SOURCE_LAST_CONTENT_VERSION_UPDATE}]"
+    echo "Source version            : [${SOURCE_CONTENT_RELEASE_VERSION}] $DB_RELEASE_TITLE"
+    echo "Last source content update: [${SOURCE_LAST_CONTENT_VERSION_UPDATE}]"
     get_current_source_db_version
     check_dbs_accessibility
+    echo "Database content version  : [${DB_LAST_CONTENT_VERSION_UPDATE}]"
     echo
     show_installation_status
     echo
