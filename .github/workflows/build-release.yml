@@ -201,7 +201,7 @@ jobs:
       - name: Upload snapshot
         uses: "marvinpinto/action-automatic-releases@latest"
         with:
-          repo_token: "${{ secrets.PUSH_RELEASE_TOKEN }}"
+          repo_token: "${{ secrets.GITHUB_TOKEN }}"
           automatic_release_tag: "latest"
           prerelease: false
           title: "Development Build(${{ steps.date.outputs.date }})"
